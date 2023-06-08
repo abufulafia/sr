@@ -3,6 +3,8 @@ require(tidyverse)
 
 # produce file for strategic review 
 
+cols_needed <- c(1,57,65,73)
+
 
 # 1. GENERATE LIVES SAVED DATA TARGET VS RESULTS ####
 
@@ -16,26 +18,39 @@ full_join(
 
   full_join(  
   read_excel("data/allModelledKPIs_3Mar2017.xlsx", sheet = "HIV KPI 1 e", skip = 4, range= "B5:BV105")  %>%
-  select(1,65) %>% 
-  rename(iso3=1,hiv_lives_saved_tgt_2017_2022=2)
+  select(cols_needed) %>% 
+  rename(iso3=1,
+         hiv_lives_saved_proj_2017_2022_l=2,
+         hiv_lives_saved_proj_2017_2022_m=3,
+         hiv_lives_saved_proj_2017_2022_u=4) %>% 
+  mutate(across(where(is.numeric),fns=as.double))
+  
   , 
     
   
 # TB
   read_excel("data/allModelledKPIs_3Mar2017.xlsx", sheet = "TB KPI 1 e", skip = 4,range= "B5:BV120")  %>%
-  select(1,65) %>% 
-  rename(iso3=1,tb_lives_saved_tgt_2017_2022=2) %>% 
-  mutate(tb_lives_saved_tgt_2017_2022=as.double(tb_lives_saved_tgt_2017_2022))
+  select(cols_needed) %>% 
+  rename(iso3=1,
+         tb_lives_saved_proj_2017_2022_l=2,
+         tb_lives_saved_proj_2017_2022_m=3,
+         tb_lives_saved_proj_2017_2022_u=4) %>% 
+  mutate(across(where(is.numeric),fns=as.double))
+  
+  # mutate(tb_lives_saved_proj_2017_2022=as.double(tb_lives_saved_proj_2017_2022))
 ),  
 
    # malaria
   read_excel("data/allModelledKPIs_3Mar2017.xlsx", sheet = "Malaria KPI 1 e", skip = 4,range= "B5:BV71")  %>%
-    select(1,65) %>% 
-    rename(iso3=1,malaria_lives_saved_tgt_2017_2022=2) %>% 
-    mutate(malaria_lives_saved_tgt_2017_2022=as.double(malaria_lives_saved_tgt_2017_2022))
+    select(cols_needed) %>% 
+    rename(iso3=1,
+           malaria_lives_saved_proj_2017_2022_l=2,
+           malaria_lives_saved_proj_2017_2022_m=3,
+           malaria_lives_saved_proj_2017_2022_u=4) %>% 
+  mutate(across(where(is.numeric),fns=as.double))
 )
   
-
+# ls_targets %>% mutate(across(where(is.numeric),fns=format(., digits=8, nsmall=2)))
 
 
 
@@ -88,22 +103,22 @@ inc_rdn_targets <-
     full_join(  
       read_excel("data/allModelledKPIs_3Mar2017.xlsx", sheet = "HIV KPI 1 c", skip = 4, range= "B5:BV105")  %>%
         select(1,65) %>% 
-        rename(iso3=1,hiv_inc_rdn_tgt_2022_per=2) %>% 
-        mutate(hiv_inc_rdn_tgt_2022_per=as.double(hiv_inc_rdn_tgt_2022_per))
+        rename(iso3=1,hiv_inc_rdn_proj_2022_per=2) %>% 
+        mutate(hiv_inc_rdn_proj_2022_per=as.double(hiv_inc_rdn_proj_2022_per))
       , 
       
       # TB
       read_excel("data/allModelledKPIs_3Mar2017.xlsx", sheet = "TB KPI 1 c", skip = 4,range= "B5:BV120")  %>%
         select(1,65) %>% 
-        rename(iso3=1,tb_inc_rdn_tgt_2022_per=2) %>% 
-        mutate(tb_inc_rdn_tgt_2022_per=as.double(tb_inc_rdn_tgt_2022_per))
+        rename(iso3=1,tb_inc_rdn_proj_2022_per=2) %>% 
+        mutate(tb_inc_rdn_proj_2022_per=as.double(tb_inc_rdn_proj_2022_per))
     ),  
     
     # malaria
     read_excel("data/allModelledKPIs_3Mar2017.xlsx", sheet = "Malaria KPI 1 c", skip = 4,range= "B5:BV71")  %>%
       select(1,65) %>% 
-      rename(iso3=1,malaria_inc_rdn_tgt_2022_per=2) %>% 
-      mutate(malaria_inc_rdn_tgt_2022_per=as.double(malaria_inc_rdn_tgt_2022_per))
+      rename(iso3=1,malaria_inc_rdn_proj_2022_per=2) %>% 
+      mutate(malaria_inc_rdn_proj_2022_per=as.double(malaria_inc_rdn_proj_2022_per))
   ) %>% 
   filter(iso3!="GlobalFund")
 
@@ -151,7 +166,7 @@ kpi_1 %>%
 # since the incidence reducton targets were framed with negative values as increases invert them
 kpi_1 <-
   kpi_1 %>% 
-  mutate_at(vars(contains("inc_rdn_tgt")), list(~. * -1))
+  mutate_at(vars(contains("inc_rdn_proj")), list(~. * -1))
 
 
 # write.csv(kpi_1,"kpi_1.csv", row.names = FALSE)
@@ -162,9 +177,9 @@ openxlsx::addWorksheet(wb,"KPI1a_analysis")
 openxlsx::writeDataTable(wb,"KPI1a_analysis", 
                          kpi_1 %>% 
                            select(iso3,contains("lives_saved")) %>% 
-                           filter(!is.na(hiv_lives_saved_tgt_2017_2022) 
-                                  | !is.na(tb_lives_saved_tgt_2017_2022)
-                                  | !is.na(malaria_lives_saved_tgt_2017_2022) 
+                           filter(!is.na(hiv_lives_saved_proj_2017_2022) 
+                                  | !is.na(tb_lives_saved_proj_2017_2022)
+                                  | !is.na(malaria_lives_saved_proj_2017_2022) 
                                   | !is.na(hiv_lives_saved_result_2017_2021) 
                                   | !is.na(tb_lives_saved_result_2017_2021) 
                                   | !is.na(malaria_lives_saved_result_2017_2021))
@@ -173,9 +188,9 @@ openxlsx::writeDataTable(wb,"KPI1a_analysis",
 openxlsx::addWorksheet(wb,"KPI1b_analysis")
 openxlsx::writeDataTable(wb,"KPI1b_analysis", kpi_1 %>%  
                            select(iso3,contains("inc")) %>% 
-                         filter(!is.na(hiv_inc_rdn_tgt_2022_per)
-                                |!is.na(tb_inc_rdn_tgt_2022_per) 
-                           | !is.na(malaria_inc_rdn_tgt_2022_per) 
+                         filter(!is.na(hiv_inc_rdn_proj_2022_per)
+                                |!is.na(tb_inc_rdn_proj_2022_per) 
+                           | !is.na(malaria_inc_rdn_proj_2022_per) 
                            | !is.na(hiv_inc_result_2015_2021_per) 
                            | !is.na(tb_inc_result_2015_2021_per)
                            | !is.na(malaria_inc_result_2015_2021_per))
